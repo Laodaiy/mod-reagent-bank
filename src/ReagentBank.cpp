@@ -45,8 +45,8 @@ private:
     void WithdrawItem(Player* player, uint32 entry)
     {
         // This query can be changed to async to improve performance, but there will be some visual bugs because the query will not be done executing when the menu refreshes
-        std::string query = "SELECT amount FROM custom_reagent_bank WHERE character_id = " + std::to_string(player->GetGUID().GetCounter()) + " AND item_entry = " + std::to_string(entry);
-        QueryResult result = CharacterDatabase.Query("SELECT amount FROM custom_reagent_bank WHERE character_id = " + std::to_string(player->GetGUID().GetCounter()) + " AND item_entry = " + std::to_string(entry));
+        std::string query = "SELECT amount FROM mod_reagent_bank WHERE character_id = " + std::to_string(player->GetGUID().GetCounter()) + " AND item_entry = " + std::to_string(entry);
+        QueryResult result = CharacterDatabase.Query("SELECT amount FROM mod_reagent_bank WHERE character_id = " + std::to_string(player->GetGUID().GetCounter()) + " AND item_entry = " + std::to_string(entry));
         if (result)
         {
             uint32 storedAmount = (*result)[0].Get<uint32>();
@@ -59,7 +59,7 @@ private:
                 InventoryResult msg = player->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, entry, storedAmount);
                 if (msg == EQUIP_ERR_OK)
                 {
-                    CharacterDatabase.Execute("DELETE FROM custom_reagent_bank WHERE character_id = {} AND item_entry = {}", player->GetGUID().GetCounter(), entry);
+                    CharacterDatabase.Execute("DELETE FROM mod_reagent_bank WHERE character_id = {} AND item_entry = {}", player->GetGUID().GetCounter(), entry);
                     Item* item = player->StoreNewItem(dest, entry, true);
                     player->SendNewItem(item, storedAmount, true, false);
                 }
@@ -76,7 +76,7 @@ private:
                 InventoryResult msg = player->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, entry, stackSize);
                 if (msg == EQUIP_ERR_OK)
                 {
-                    CharacterDatabase.Execute("UPDATE custom_reagent_bank SET amount = {} WHERE character_id = {} AND item_entry = {}", storedAmount - stackSize, player->GetGUID().GetCounter(), entry);
+                    CharacterDatabase.Execute("UPDATE mod_reagent_bank SET amount = {} WHERE character_id = {} AND item_entry = {}", storedAmount - stackSize, player->GetGUID().GetCounter(), entry);
                     Item* item = player->StoreNewItem(dest, entry, true);
                     player->SendNewItem(item, stackSize, true, false);
                 }
@@ -121,7 +121,7 @@ private:
 
     void DepositAllReagents(Player* player) {
         WorldSession *session = player->GetSession();
-        std::string query = "SELECT item_entry, item_subclass, amount FROM custom_reagent_bank WHERE character_id = " + std::to_string(player->GetGUID().GetCounter());
+        std::string query = "SELECT item_entry, item_subclass, amount FROM mod_reagent_bank WHERE character_id = " + std::to_string(player->GetGUID().GetCounter());
         session->GetQueryProcessor().AddCallback( CharacterDatabase.AsyncQuery(query).WithCallback([=, this](QueryResult result) {
             std::map<uint32, uint32> entryToAmountMap;
             std::map<uint32, uint32> entryToSubclassMap;
@@ -165,7 +165,7 @@ private:
                     uint32 itemEntry = mapEntry.first;
                     uint32 itemAmount = mapEntry.second;
                     uint32 itemSubclass = entryToSubclassMap.find(itemEntry)->second;
-                    trans->Append("REPLACE INTO custom_reagent_bank (character_id, item_entry, item_subclass, amount) VALUES ({}, {}, {}, {})", player->GetGUID().GetCounter(), itemEntry, itemSubclass, itemAmount);
+                    trans->Append("REPLACE INTO mod_reagent_bank (character_id, item_entry, item_subclass, amount) VALUES ({}, {}, {}, {})", player->GetGUID().GetCounter(), itemEntry, itemSubclass, itemAmount);
                 }
                 CharacterDatabase.CommitTransaction(trans);
             }
@@ -239,7 +239,7 @@ public:
     void ShowReagentItems(Player* player, Creature* creature, uint32 item_subclass, uint16 gossipPageNumber)
     {
         WorldSession* session = player->GetSession();
-        std::string query = "SELECT item_entry, amount FROM custom_reagent_bank WHERE character_id = " + std::to_string(player->GetGUID().GetCounter()) + " AND item_subclass = " +
+        std::string query = "SELECT item_entry, amount FROM mod_reagent_bank WHERE character_id = " + std::to_string(player->GetGUID().GetCounter()) + " AND item_subclass = " +
                 std::to_string(item_subclass) + " ORDER BY item_entry";
         session->GetQueryProcessor().AddCallback(CharacterDatabase.AsyncQuery(query).WithCallback([=, this](QueryResult result)
         {
@@ -272,7 +272,7 @@ public:
             {
                 AddGossipItemFor(player, GOSSIP_ICON_CHAT, "下一页", item_subclass, gossipPageNumber + 1);
             }
-            AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/Ability_Spy:30:30:-18:0|tBack...", MAIN_MENU, 0);
+            AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "|TInterface/ICONS/Ability_Spy:30:30:-18:0|t返回...", MAIN_MENU, 0);
             SendGossipMenuFor(player, NPC_TEXT_ID, creature->GetGUID());
         }));
     }
